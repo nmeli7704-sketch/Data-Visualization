@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Normal Distribution Visualizer</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 90%; max-width: 900px; }
+        .controls { margin-top: 25px; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 1px solid #ddd; }
+        input[type="range"] { width: 100%; cursor: pointer; }
+        .stats { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 10px; }
+        #n-display { color: #1a73e8; font-size: 1.2em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Normal Distribution & Law of Large Numbers</h1>
+        <div id="plot"></div>
+        <div class="controls">
+            <div class="stats">
+                <span>Sample Size ($N$): <span id="n-display">1000</span></span>
+                <span>Scale: High Precision</span>
+            </div>
+            <input type="range" id="n-slider" min="10" max="100000" step="100" value="1000">
+        </div>
+    </div>
+
+    <script>
+        const slider = document.getElementById('n-slider');
+        const display = document.getElementById('n-display');
+        const plotDiv = document.getElementById('plot');
+
+        function generateNormal() {
+            let u=0, v=0;
+            while(u===0) u=Math.random();
+            while(v===0) v=Math.random();
+            return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+        }
+
+        function update() {
+            const n = parseInt(slider.value);
+            display.textContent = n.toLocaleString();
+            const samples = Array.from({length: n}, () => generateNormal());
+            const nbins = Math.floor(Math.pow(n, 0.45) * 4);
+
+            const xTheory = [], yTheory = [];
+            for (let x = -4; x <= 4; x += 0.02) {
+                xTheory.push(x);
+                yTheory.push((1 / Math.sqrt(2 * Math.PI)) * Math.exp(-0.5 * Math.pow(x, 2)));
+            }
+
+            const data = [
+                { x: samples, type: 'histogram', histnorm: 'probability density', nbinsx: nbins, 
+                  name: 'Samples', marker: {color: 'rgba(26, 115, 232, 0.5)', line: {color: 'white', width: n > 5000 ? 0 : 0.5}} },
+                { x: xTheory, y: yTheory, mode: 'lines', name: 'Theory', line: {color: '#d93025', width: 3} }
+            ];
+
+            Plotly.newPlot(plotDiv, data, {
+                xaxis: {title: 'Standard Deviations (σ)', range: [-4, 4]},
+                yaxis: {title: 'Density', range: [0, 0.5], fixedrange: true},
+                bargap: n > 2000 ? 0 : 0.05,
+                margin: {t: 20}
+            }, {responsive: true, displayModeBar: false});
+        }
+        slider.oninput = update;
+        update();
+    </script>
+</body>
+</html>
